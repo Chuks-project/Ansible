@@ -1,0 +1,8 @@
+[webservers]
+54.149.171.5
+34.219.38.119
+
+[webservers:vars]
+ansible_ssh_private_key_file=~/.ssh/ansi-key-pair.pem
+ansible_user=ubuntu
+
