@@ -1,0 +1,95 @@
+---
+- name: Install java and net-tools
+  hosts: 35.167.30.30
+  tasks:
+    - name: Update apt repo and cache
+      become: true
+      ansible.builtin.apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+    - name: Install Java 8
+      become: true
+      ansible.builtin.apt:
+        name: openjdk-8-jre-headless
+    - name: Install net-tools
+      become: true
+      ansible.builtin.apt:
+        name: net-tools
+
+- name: Download and unpack Nexus installer
+  hosts: 35.167.30.30
+  tasks: 
+    - name: Download Nexus
+      become: true
+      ansible.builtin.get_url:
+        url: https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+        dest: /opt/
+      register: download_result
+    # - debug: msg={{download_result}}
+    - name: Untar nexus installer
+      become: true
+      ansible.builtin.unarchive:
+        src: "{{download_result.dest}}"
+        dest: /opt/
+        remote_src: yes 
+    - name: find nexus folder
+      become: true
+      find:
+        path: /opt
+        pattern: "nexus-*"
+      register: find_result
+    - debug: msg={{find_result}}
+
+    - name: Rename nexus folder
+      become: true
+      shell: mv {{find_result.files[0].path}} /opt/nexus
+    # - name: create nexus user to own nexus folder
+    #   become: true
+    #   group:
+    #     name: nexus
+    #     state: present
+    # - name: Create nexus user
+    #   become: true
+    #   ansible.builtin.shell: useradd -g nexus nexus
+- name: Set up Nexus ownership
+  hosts: 35.167.30.30
+  tasks:
+    - name: Check if /opt/nexus exists
+      ansible.builtin.stat:
+        path: /opt/nexus
+      register: nexus_dir
+    - name: Remove /opt/nexus if it exists as a file
+      ansible.builtin.file:
+        path: /opt/nexus
+        state: absent
+      when: nexus_dir.stat.exists and not nexus_dir.stat.isdir
+      become: true
+
+    - name: Create /opt/nexus directory
+      become: true
+      ansible.builtin.file:
+        path: /opt/nexus
+        state: directory
+        owner: nexus
+        group: nexus
+
+    - name: Set ownership of /opt/nexus to nexus user
+      become: true
+      command: sudo chown -R nexus:nexus /opt/nexus
+      
+    - name: Make nexus user owner of nexus folder
+      file:
+        path: /opt/nexus
+        state: directory
+        owner: nexus
+        group: nexus
+        recurse: yes
+
+    - name: Make nexus owner of sonatype-work folder
+      file:
+        path: /opt/nexus
+        state: directory
+        owner: nexus 
+        group: nexus
+        recurse: yes

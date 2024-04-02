@@ -1,12 +1,31 @@
 ---
 - name: Configure nginx web server
-  hosts: webserver
+  hosts: webservers
+  
   tasks:
-  - name: install nginx server
-    apt:
-      name: nginx
-      state: latest
-  - name: start nginx server
-    service:
-      name: nginx
-      state: started
+    - name: uninstall nginx server
+      become: true  # Add become directive at the task level to elevate privileges for this task
+      apt:
+        name: nginx
+        state: absent
+
+    - name: stop nginx server
+      service:
+        name: nginx
+        state: stopped
+
+
+
+
+# ---
+# - name: Configure nginx web server
+#   hosts: webservers
+#   tasks:
+#   - name: install nginx server
+#     apt:
+#       name: nginx
+#       state: latest
+#   - name: start nginx server
+#     service:
+#       name: nginx
+#       state: started
